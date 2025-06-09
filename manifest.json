@@ -15,9 +15,6 @@
             "type": "image/png"
         }
     ],
-    "launch_handler": {
-        "client_mode": "focus-existing"
-    },
     "orientation": "any",
     "theme_color": "white",
     "background_color": "white",
