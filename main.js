@@ -77,7 +77,7 @@ function loadImages(site) {
         if (hour >= site.min && hour <= site.max) {
             const date = new Date();
             const formattedDate = date.toISOString().replace(/[-:]/g, "").slice(0, 8);
-            const formattedHour = String(hour).padStart(2, '0');
+            const formattedHour = String(hour - site.offset).padStart(2, '0');
             const imageUrl = site.url.replace("%yyyymmdd%", formattedDate).replace("%hour%", formattedHour);
             const img = document.createElement("img");
             img.src = imageUrl;
