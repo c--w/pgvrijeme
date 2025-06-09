@@ -116,10 +116,13 @@ function getImageUrl(site, hour) {
 let clickTimer;
 let clickInterval;
 function handleImageClick(event) {
-    let dir = 0;
-    if (event.clientX < window.innerWidth / 3) {
+    if (event.target.tagName !== "IMG") {
+        return; // Only handle clicks on images
+    }
+    let dir;
+    if (event.clientX < window.innerWidth / 2) {
         dir = -1; // Left click
-    } else if (event.clientX > 2 * window.innerWidth / 3) {
+    } else {
         dir = 1; // Right click
     }
     if (clickTimer) {
