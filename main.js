@@ -6,7 +6,6 @@ const sites = {
         "max": 72,
         "indexes": [4, 28, 52],
         "increments": 1,
-        "crop": null
     },
     "aladin_hr_kvarner": {
         "name": "Aladin HR Istra i Kvarner",
@@ -15,7 +14,6 @@ const sites = {
         "max": 72,
         "indexes": [4, 28, 52],
         "increments": 1,
-        "crop": null
     },
     "aladin_hr_naoblaka": {
         "name": "Aladin HR naoblaka",
@@ -24,7 +22,6 @@ const sites = {
         "max": 72,
         "indexes": [4, 28, 52],
         "increments": 1,
-        "crop": null
     },
     "aladin_hr_satelit": {
         "name": "Aladin HR satelit",
@@ -33,7 +30,6 @@ const sites = {
         "max": 23,
         "indexes": 'current-time-utc',
         "increments": 1,
-        "crop": null
     },
     "aladin_slo_tlo": {
         "name": "Aladin SLO 10m",
@@ -42,7 +38,6 @@ const sites = {
         "max": 72,
         "indexes": [12, 36, 60],
         "increments": 3,
-        "crop": null,
     },
     "aladin_slo_925": {
         "name": "Aladin SLO 925hPa",
@@ -51,7 +46,6 @@ const sites = {
         "max": 72,
         "indexes": [12, 36, 60],
         "increments": 3,
-        "crop": null,
     },
     "aladin_slo_850": {
         "name": "Aladin SLO 850hPa",
@@ -60,7 +54,6 @@ const sites = {
         "max": 72,
         "indexes": [12, 36, 60],
         "increments": 3,
-        "crop": null,
     },
     "aladin_slo_cloud": {
         "name": "Aladin SLO Cloud Cover",
@@ -69,7 +62,22 @@ const sites = {
         "max": 72,
         "indexes": [12, 36, 60],
         "increments": 3,
-        "crop": null,
+    },
+    "skewt-maksimir": {
+        "name": "Sondaža Maksimir",
+        "url": "https://vrijeme.hr/maksimir.png",
+        "min": 0,
+        "max": 0,
+        "indexes": [0],
+        "increments": 0,
+    },
+    "radar-kompozit": {
+        "name": "Radar HR kompozit",
+        "url": "https://vrijeme.hr/radari/kompozit_%hour%00.png",
+        "min": 0,
+        "max": 23,
+        "indexes": 'current-time-hr',
+        "increments": 1,
     },
 }
 
@@ -103,9 +111,11 @@ function loadImages(site) {
     images.innerHTML = "";
     let indexes = site.indexes;
     if (indexes === 'current-time-utc') {
-        const date = new Date();
-        const utcHour = date.getUTCHours();
-        indexes = [utcHour];
+        const hour = new Date().getUTCHours();
+        indexes = [hour];
+    } else if (indexes === 'current-time-hr') {
+        const hour = new Date().getHours();
+        indexes = [hour];
     }
     indexes.forEach(hour => {
         if (hour >= site.min && hour <= site.max) {
