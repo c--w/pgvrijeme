@@ -26,6 +26,15 @@ const sites = {
         "increments": 1,
         "crop": null
     },
+    "aladin_hr_satelit": {
+        "name": "Aladin HR satelit",
+        "url": "https://vrijeme.hr/satelit/MSG4-%hour%00.jpg",
+        "min": 0,
+        "max": 23,
+        "indexes": 'current-time-utc',
+        "increments": 1,
+        "crop": null
+    },
     "aladin_slo_tlo": {
         "name": "Aladin SLO 10m",
         "url": "https://meteo.arso.gov.si/uploads/probase/www/model/aladin/field/ad_%yyyymmdd%-0000_vm-va10m_si_0%hour%.png",
@@ -92,7 +101,13 @@ function loadImages(site) {
     setCookie('site', site.name);
     const images = document.getElementById("images");
     images.innerHTML = "";
-    site.indexes.forEach(hour => {
+    let indexes = site.indexes;
+    if (indexes === 'current-time-utc') {
+        const date = new Date();
+        const utcHour = date.getUTCHours();
+        indexes = [utcHour];
+    }
+    indexes.forEach(hour => {
         if (hour >= site.min && hour <= site.max) {
             const imageUrl = getImageUrl(site, hour);
             const img = document.createElement("img");
