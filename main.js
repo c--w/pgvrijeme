@@ -4,7 +4,16 @@ const sites = {
         "url": "https://prognoza.hr/aladinHR/web_uv10_HRv8_%hour%.png",
         "min": 0,
         "max": 72,
-        "offset": 8,
+        "indexes": [4, 28, 52],
+        "increments": 1,
+        "crop": null
+    },
+    "aladin_hr_kvarner": {
+        "name": "Aladin HR Istra i Kvarner",
+        "url": "https://prognoza.hr/aladinHR/web_uv10_SENJ_%hour%.png",
+        "min": 0,
+        "max": 72,
+        "indexes": [4, 28, 52],
         "increments": 1,
         "crop": null
     },
@@ -13,7 +22,7 @@ const sites = {
         "url": "https://meteo.arso.gov.si/uploads/probase/www/model/aladin/field/ad_%yyyymmdd%-0000_vm-va10m_si_0%hour%.png",
         "min": 3,
         "max": 72,
-        "offset": 0,
+        "indexes": [12, 36, 60],
         "increments": 3,
         "crop": null,
     },
@@ -22,7 +31,7 @@ const sites = {
         "url": "https://meteo.arso.gov.si/uploads/probase/www/model/aladin/field/as_%yyyymmdd%-0000_vf925hPa_si-neighbours_0%hour%.png",
         "min": 3,
         "max": 72,
-        "offset": 0,
+        "indexes": [12, 36, 60],
         "increments": 3,
         "crop": null,
     },
@@ -31,7 +40,7 @@ const sites = {
         "url": "https://meteo.arso.gov.si/uploads/probase/www/model/aladin/field/as_%yyyymmdd%-0000_r-t-vf850hPa_si-neighbours_0%hour%.png",
         "min": 3,
         "max": 72,
-        "offset": 0,
+        "indexes": [12, 36, 60],
         "increments": 3,
         "crop": null,
     },
@@ -40,7 +49,7 @@ const sites = {
         "url": "https://meteo.arso.gov.si/uploads/probase/www/model/aladin/field/as_%yyyymmdd%-0000_tcc-rr_si-neighbours_0%hour%.png",
         "min": 3,
         "max": 72,
-        "offset": 0,
+        "indexes": [12, 36, 60],
         "increments": 3,
         "crop": null,
     },
@@ -72,12 +81,11 @@ function init() {
 function loadImages(site) {
     const images = document.getElementById("images");
     images.innerHTML = "";
-    let hours = [12, 36, 60];
-    hours.forEach(hour => {
+    site.indexes.forEach(hour => {
         if (hour >= site.min && hour <= site.max) {
             const date = new Date();
             const formattedDate = date.toISOString().replace(/[-:]/g, "").slice(0, 8);
-            const formattedHour = String(hour - site.offset).padStart(2, '0');
+            const formattedHour = String(hour).padStart(2, '0');
             const imageUrl = site.url.replace("%yyyymmdd%", formattedDate).replace("%hour%", formattedHour);
             const img = document.createElement("img");
             img.src = imageUrl;
