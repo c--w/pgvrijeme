@@ -23,8 +23,8 @@ const sites = {
         "indexes": [4, 28, 52],
         "increments": 1,
     },
-    "aladin_hr_satelit": {
-        "name": "Aladin HR satelit",
+    "hr_satelit": {
+        "name": "Eumetsat Kompozit HR",
         "url": "https://vrijeme.hr/satelit/MSG4-%hour%00.jpg",
         "min": 0,
         "max": 23,
