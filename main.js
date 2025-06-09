@@ -78,28 +78,98 @@ function init() {
         option.textContent = name;
         sitesElem.appendChild(option);
         option.addEventListener("click", () => {
-            const selectedSite = Object.values(sites).find(site => site.name === name);
+            const selectedSite = siteByName(name)
             if (selectedSite) {
                 sitesElem.style.display = "none";
                 loadImages(selectedSite);
             }
         });
     });
+    loadImages(siteByName(getCookie('site') || "Aladin SLO 925hPa"));
 }
 
 function loadImages(site) {
+    setCookie('site', site.name);
     const images = document.getElementById("images");
     images.innerHTML = "";
     site.indexes.forEach(hour => {
         if (hour >= site.min && hour <= site.max) {
-            const date = new Date();
-            const formattedDate = date.toISOString().replace(/[-:]/g, "").slice(0, 8);
-            const formattedHour = String(hour).padStart(2, '0');
-            const imageUrl = site.url.replace("%yyyymmdd%", formattedDate).replace("%hour%", formattedHour);
+            const imageUrl = getImageUrl(site, hour);
             const img = document.createElement("img");
             img.src = imageUrl;
-            img.alt = `${site.name} - ${formattedDate} ${formattedHour}`;
+            img.alt = `${site.name} - ${hour}`;
+            img.setAttribute("index", hour);
+            img.setAttribute("site", site.name);
+            img.addEventListener("click", handleImageClick);
             images.appendChild(img);
         }
     })
+}
+
+function getImageUrl(site, hour) {
+    const date = new Date();
+    const formattedDate = date.toISOString().replace(/[-:]/g, "").slice(0, 8);
+    const formattedHour = String(hour).padStart(2, '0');
+    return site.url.replace("%yyyymmdd%", formattedDate).replace("%hour%", formattedHour);
+}
+
+let clickTimer;
+let clickInterval;
+function handleImageClick(event) {
+    let dir = 0;
+    if (event.clientX < window.innerWidth / 3) {
+        dir = -1; // Left click
+    } else if (event.clientX > 2 * window.innerWidth / 3) {
+        dir = 1; // Right click
+    }
+    if (clickTimer) {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        if (clickInterval) {
+            clearInterval(clickInterval);
+            clickInterval = null;
+            return;
+        }
+        clickInterval = setInterval(() => {
+            const img = event.target;
+            nextPrevImage(img, dir);
+        }, 600);
+    } else {
+        clickTimer = setTimeout(() => {
+            clickTimer = null;
+            const img = event.target;
+            nextPrevImage(img, dir);
+        }, 300);
+    }
+}
+
+function nextPrevImage(img, dir) {
+    const site = siteByName(img.getAttribute("site"));
+    const index = parseInt(img.getAttribute("index"));
+    const newIndex = index + dir * site.increments;
+    if (newIndex < site.min || newIndex > site.max) {
+        clearInterval(clickInterval);
+        clickInterval = null;
+        return; // Out of bounds
+    }
+    img.src = getImageUrl(site, newIndex);
+    img.setAttribute("index", newIndex);
+}
+
+function siteByName(name) {
+    return Object.values(sites).find(site => site.name === name);
+}
+
+function setCookie(cname, cvalue, exdays = 670) {
+    const d = new Date();
+    d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+    let expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    let name = cname + "=";
+    let ca = document.cookie.split(";");
+    let value = ca.find((c) => c.trim().startsWith(name));
+    return value ? value.trim().substring(name.length) : "";
 }
