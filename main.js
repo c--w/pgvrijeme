@@ -56,7 +56,7 @@ function init() {
     const sitesElem = document.getElementById("sites");
     let names = Object.values(sites).map(site => site.name);
     names.forEach(name => {
-        const option = document.createElement("option");
+        const option = document.createElement("div");
         option.textContent = name;
         sitesElem.appendChild(option);
         option.addEventListener("click", () => {
