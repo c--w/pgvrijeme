@@ -1,0 +1,40 @@
+@import url("bootstrap-icons.css");
+
+#menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+#toggle {
+    padding: 2px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    float: right;
+}
+
+#sites {
+    display: none;
+    background-color: aliceblue;
+    margin: 0;
+}
+
+#sites li {
+    padding: 5px;
+    list-style: none;
+    cursor: pointer;
+}
+
+#images {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+
+img {
+    max-width: 100vw;
+    height: auto;
+}
