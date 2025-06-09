@@ -17,6 +17,15 @@ const sites = {
         "increments": 1,
         "crop": null
     },
+    "aladin_hr_naoblaka": {
+        "name": "Aladin HR naoblaka",
+        "url": "https://prognoza.hr/aladinHR/web_naob_%hour%.png",
+        "min": 0,
+        "max": 72,
+        "indexes": [4, 28, 52],
+        "increments": 1,
+        "crop": null
+    },
     "aladin_slo_tlo": {
         "name": "Aladin SLO 10m",
         "url": "https://meteo.arso.gov.si/uploads/probase/www/model/aladin/field/ad_%yyyymmdd%-0000_vm-va10m_si_0%hour%.png",
