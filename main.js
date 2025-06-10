@@ -186,6 +186,7 @@ function prepImage(urlPrep, hour, done) {
 
 let timeout = null;
 function loadImage(img, site, hour) {
+    log(site.name, hour);
     if (site.url_prep) {
         prepImage(site.url_prep, hour, () => {
             if (timeout) {
@@ -290,4 +291,9 @@ function getCookie(cname) {
     let ca = document.cookie.split(";");
     let value = ca.find((c) => c.trim().startsWith(name));
     return value ? value.trim().substring(name.length) : "";
+}
+
+function log(siteName, hour) {
+    const i = new Image();
+    i.src = "https://hpgf.org/pgv/log.php?i=" + encodeURIComponent(siteName + ' ' + hour);
 }
