@@ -71,6 +71,51 @@ const sites = {
         "indexes": [0],
         "increments": 0,
     },
+    "skewt-zg": {
+        "name": "Skewt Zagreb",
+        "url": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/output/45.9-15.8-%hour%.png",
+        "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=45.9&lon=15.8&hh=%hour%",
+        "min": 0,
+        "max": 72,
+        "indexes": [0],
+        "increments": 12,
+    },
+    "skewt-jap": {
+        "name": "Skewt Japetić",
+        "url": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/output/45.7-15.7-%hour%.png",
+        "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=45.7&lon=15.7&hh=%hour%",
+        "min": 0,
+        "max": 72,
+        "indexes": [0],
+        "increments": 12,
+    },
+    "skewt-tribalj": {
+        "name": "Skewt Tribalj",
+        "url": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/output/45.2-14.7-%hour%.png",
+        "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=45.2&lon=14.7&hh=%hour%",
+        "min": 0,
+        "max": 72,
+        "indexes": [0],
+        "increments": 12,
+    },
+    "skewt-ivanec": {
+        "name": "Skewt Ivanec",
+        "url": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/output/46.2-16.1-%hour%.png",
+        "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=46.2&lon=16.1&hh=%hour%",
+        "min": 0,
+        "max": 72,
+        "indexes": [0],
+        "increments": 12,
+    },
+    "skewt-buzet": {
+        "name": "Skewt Buzet",
+        "url": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/output/46.4-14.0-%hour%.png",
+        "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=46.4&lon=14.0&hh=%hour%",
+        "min": 0,
+        "max": 72,
+        "indexes": [0],
+        "increments": 12,
+    },
     "radar-kompozit": {
         "name": "Radar HR kompozit",
         "url": "https://vrijeme.hr/radari/kompozit_%hour%00.png",
@@ -119,47 +164,93 @@ function loadImages(site) {
     }
     indexes.forEach(hour => {
         if (hour >= site.min && hour <= site.max) {
-            const imageUrl = getImageUrl(site, hour);
             const img = document.createElement("img");
-            img.src = imageUrl;
-            img.alt = `${site.name} - ${hour}`;
-            img.setAttribute("index", hour);
+            images.appendChild(img);
             img.setAttribute("site", site.name);
             img.addEventListener("click", handleImageClick);
-            images.appendChild(img);
+            img.onerror = () => {
+                console.error(`Error loading image for ${site.name} at hour ${hour}`);
+            };
+            loadImage(img, site, hour);
         }
     })
 }
 
-function getImageUrl(site, hour) {
+function prepImage(urlPrep, hour, done) {
+    const imgPrep = new Image();
+    imgPrep.src = getImageUrl(urlPrep, hour);
+    imgPrep.onload = () => {
+        done();
+    };
+}
+
+let timeout = null;
+function loadImage(img, site, hour) {
+    if (site.url_prep) {
+        prepImage(site.url_prep, hour, () => {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+                img.style.display = "block";
+                img.src = getImageUrl(site.url, hour);
+            }
+        })
+        timeout = setTimeout((img) => {
+            const parent = img.parentNode;
+            const newImg = document.createElement("img");
+            newImg.src = img.src; // Keep the same source
+            newImg.setAttribute("site", site.name);
+            newImg.setAttribute("hour", hour);
+            newImg.addEventListener("click", handleImageClick);
+            parent.replaceChild(newImg, img);
+        }, 2000, img);
+    }
+    img.setAttribute("hour", hour);
+    img.title = `${site.name} - ${hour}`;
+    img.onload = () => {
+        if (timeout) {
+            clearTimeout(timeout);
+            timeout = null;
+        }
+    };
+    img.onerror = () => {
+        img.style.display = "none";
+    }
+    img.src = getImageUrl(site.url, hour);
+}
+
+function getImageUrl(url, hour) {
     const date = new Date();
     const formattedDate = date.toISOString().replace(/[-:]/g, "").slice(0, 8);
     const formattedHour = String(hour).padStart(2, '0');
-    return site.url.replace("%yyyymmdd%", formattedDate).replace("%hour%", formattedHour);
+    return url.replace("%yyyymmdd%", formattedDate).replace("%hour%", formattedHour);
 }
 
 let clickTimer;
 let clickInterval;
 function handleImageClick(event) {
     if (event.target.tagName !== "IMG") {
-        return; // Only handle clicks on images
+        return;
     }
     let dir;
     if (event.clientX < window.innerWidth / 2) {
-        dir = -1; // Left click
+        dir = -1;
     } else {
-        dir = 1; // Right click
+        dir = 1;
     }
     if (clickTimer) {
         clearTimeout(clickTimer);
         clickTimer = null;
+        const img = event.target;
+        const site = siteByName(img.getAttribute("site"));
+        if (site.url_prep) // no animation for prep images
+            return;
         if (clickInterval) {
             clearInterval(clickInterval);
             clickInterval = null;
             return;
         }
         clickInterval = setInterval(() => {
-            const img = event.target;
             nextPrevImage(img, dir);
         }, 600);
     } else {
@@ -173,15 +264,14 @@ function handleImageClick(event) {
 
 function nextPrevImage(img, dir) {
     const site = siteByName(img.getAttribute("site"));
-    const index = parseInt(img.getAttribute("index"));
-    const newIndex = index + dir * site.increments;
-    if (newIndex < site.min || newIndex > site.max) {
+    const hour = parseInt(img.getAttribute("hour"));
+    const newHour = hour + dir * site.increments;
+    if (newHour < site.min || newHour > site.max) {
         clearInterval(clickInterval);
         clickInterval = null;
         return; // Out of bounds
     }
-    img.src = getImageUrl(site, newIndex);
-    img.setAttribute("index", newIndex);
+    loadImage(img, site, newHour);
 }
 
 function siteByName(name) {
