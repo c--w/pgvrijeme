@@ -1,4 +1,12 @@
 const sites = {
+    "aladin_slo_950_850_cc": {
+        "name": "Aladin SLO 950/850/Cloud Cover",
+        "site_names": [
+            "Aladin SLO 925hPa",
+            "Aladin SLO 850hPa",
+            "Aladin SLO Cloud Cover"
+        ],
+    },
     "aladin_hr": {
         "name": "Aladin HR",
         "url": "https://prognoza.hr/aladinHR/web_uv10_HRv8_%hour%.png",
@@ -126,6 +134,7 @@ const sites = {
     },
 }
 
+let currentSite = null;
 onload = () => init();
 
 function init() {
@@ -151,7 +160,12 @@ function init() {
 }
 
 function loadImages(site) {
+    currentSite = site;
     setCookie('site', site.name);
+    if (site.site_names) {
+        loadSites(site.site_names);
+        return;
+    }
     const images = document.getElementById("images");
     images.innerHTML = "";
     let indexes = site.indexes;
@@ -174,6 +188,20 @@ function loadImages(site) {
             loadImage(img, site, hour);
         }
     })
+}
+
+function loadSites(site_names) {
+    const images = document.getElementById("images");
+    images.innerHTML = "";
+    site_names.forEach(name => {
+        let site = siteByName(name);
+        let hour = site.indexes[0];
+        const img = document.createElement("img");
+        img.setAttribute("site", site.name);
+        img.addEventListener("click", handleImageClick);
+        images.appendChild(img);
+        loadImage(img, site, hour);
+    });
 }
 
 function prepImage(urlPrep, hour, done) {
@@ -244,7 +272,7 @@ function handleImageClick(event) {
         clickTimer = null;
         const img = event.target;
         const site = siteByName(img.getAttribute("site"));
-        if (site.url_prep) // no animation for prep images
+        if (site.url_prep || currentSite.site_names) // no animation for prep images or grouped sites
             return;
         if (clickInterval) {
             clearInterval(clickInterval);
@@ -255,6 +283,12 @@ function handleImageClick(event) {
             nextPrevImage(img, dir);
         }, 600);
     } else {
+        if (currentSite.site_names) {
+            event.target.parentNode.querySelectorAll("img").forEach((img) => {
+                nextPrevImage(img, dir);
+            })
+            return;
+        }
         clickTimer = setTimeout(() => {
             clickTimer = null;
             const img = event.target;
