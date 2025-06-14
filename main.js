@@ -9,13 +9,22 @@ const sites = {
         start_index: 12,
     },
     "aladin_slo_950_850_cc_sutra": {
-        "name": "Aladin SLO 950/850/Cloud Cover sutra",
+        "name": "Aladin SLO 950/850/Cloud Cover +1d",
         "site_names": [
             "Aladin SLO 925hPa",
             "Aladin SLO 850hPa",
             "Aladin SLO Cloud Cover"
         ],
         start_index: 36,
+    },
+    "aladin_slo_950_850_cc_prekosutra": {
+        "name": "Aladin SLO 950/850/Cloud Cover +2d",
+        "site_names": [
+            "Aladin SLO 925hPa",
+            "Aladin SLO 850hPa",
+            "Aladin SLO Cloud Cover"
+        ],
+        start_index: 60,
     },
     "aladin_hr": {
         "name": "Aladin HR",
@@ -166,7 +175,7 @@ function init() {
             }
         });
     });
-    loadImages(siteByName(getCookie('site') || "aladin_slo_950_850_cc_danas") || sites["aladin_slo_950_850_cc_danas"]);
+    loadImages(siteByName(getCookie('site')) || sites["aladin_slo_950_850_cc_danas"]);
 }
 
 function loadImages(site) {
@@ -271,39 +280,34 @@ function handleImageClick(event) {
     if (event.target.tagName !== "IMG") {
         return;
     }
-    let dir;
-    if (event.clientX < window.innerWidth / 2) {
-        dir = -1;
-    } else {
-        dir = 1;
-    }
+    const dir = event.clientX < window.innerWidth / 2 ? -1 : 1;
     if (clickTimer) {
         clearTimeout(clickTimer);
         clickTimer = null;
-        const img = event.target;
-        const site = siteByName(img.getAttribute("site"));
-        if (site.url_prep || currentSite.site_names) // no animation for prep images or grouped sites
-            return;
         if (clickInterval) {
             clearInterval(clickInterval);
             clickInterval = null;
             return;
         }
-        clickInterval = setInterval(() => {
+        const img = event.target;
+        const site = siteByName(img.getAttribute("site"));
+        if (site.url_prep || currentSite.site_names) // no animation for prep images or grouped sites
+            return;
+        clickInterval = setInterval((img, dir) => {
             nextPrevImage(img, dir);
-        }, 600);
+        }, 600, img, dir);
     } else {
-        if (currentSite.site_names) {
+        if (currentSite.site_names) { // next/prev for grouped sites
             event.target.parentNode.querySelectorAll("img").forEach((img) => {
                 nextPrevImage(img, dir);
             })
             return;
         }
-        clickTimer = setTimeout(() => {
+        const img = event.target;
+        clickTimer = setTimeout((img) => {
             clickTimer = null;
-            const img = event.target;
             nextPrevImage(img, dir);
-        }, 300);
+        }, 300, img);
     }
 }
 
@@ -312,9 +316,11 @@ function nextPrevImage(img, dir) {
     const hour = parseInt(img.getAttribute("hour"));
     const newHour = hour + dir * site.increments;
     if (newHour < site.min || newHour > site.max) {
-        clearInterval(clickInterval);
-        clickInterval = null;
-        return; // Out of bounds
+        if (clickInterval) {
+            clearInterval(clickInterval);
+            clickInterval = null;
+        }
+        return;
     }
     loadImage(img, site, newHour);
 }
