@@ -166,7 +166,7 @@ function init() {
             }
         });
     });
-    loadImages(siteByName(getCookie('site') || "Aladin SLO 925hPa"));
+    loadImages(siteByName(getCookie('site') || "aladin_slo_950_850_cc_danas") || sites["aladin_slo_950_850_cc_danas"]);
 }
 
 function loadImages(site) {
