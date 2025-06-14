@@ -1,11 +1,21 @@
 const sites = {
-    "aladin_slo_950_850_cc": {
-        "name": "Aladin SLO 950/850/Cloud Cover",
+    "aladin_slo_950_850_cc_danas": {
+        "name": "Aladin SLO 950/850/Cloud Cover danas",
         "site_names": [
             "Aladin SLO 925hPa",
             "Aladin SLO 850hPa",
             "Aladin SLO Cloud Cover"
         ],
+        start_index: 12,
+    },
+    "aladin_slo_950_850_cc_sutra": {
+        "name": "Aladin SLO 950/850/Cloud Cover sutra",
+        "site_names": [
+            "Aladin SLO 925hPa",
+            "Aladin SLO 850hPa",
+            "Aladin SLO Cloud Cover"
+        ],
+        start_index: 36,
     },
     "aladin_hr": {
         "name": "Aladin HR",
@@ -195,7 +205,7 @@ function loadSites(site_names) {
     images.innerHTML = "";
     site_names.forEach(name => {
         let site = siteByName(name);
-        let hour = site.indexes[0];
+        let hour = currentSite.start_index;
         const img = document.createElement("img");
         img.setAttribute("site", site.name);
         img.addEventListener("click", handleImageClick);
