@@ -251,7 +251,7 @@ function loadImage(img, site, hour) {
             newImg.setAttribute("hour", hour);
             newImg.addEventListener("click", handleImageClick);
             parent.replaceChild(newImg, img);
-        }, 2000, img);
+        }, 3000, img);
     }
     img.setAttribute("hour", hour);
     img.title = `${site.name} - ${hour}`;
