@@ -58,6 +58,14 @@ const sites = {
         "indexes": 'current-time-utc',
         "increments": 1,
     },
+    "sat24_satelit": {
+        "name": "SAT24 Croatia",
+        "url": "https://imn-rust-lb.infoplaza.io/v4/nowcast/tiles/satellite-europe/%hour%/7/43/67/50/72?outputtype=jpeg",
+        "min": 0,
+        "max": 300000000000,
+        "indexes": 'current-date-time-utc',
+        "increments": 5,
+    },
     "aladin_slo_tlo": {
         "name": "Aladin SLO 10m",
         "url": "https://meteo.arso.gov.si/uploads/probase/www/model/aladin/field/ad_%yyyymmdd%-0000_vm-va10m_si_0%hour%.png",
@@ -98,13 +106,21 @@ const sites = {
         "indexes": [0],
         "increments": 0,
     },
+    "meteocenter-skewt-zg": {
+        "name": "Meteocenter Skewt Zagreb",
+        "url": "https://img.meteocentre.com/numerical-weather-prediction/cmc_gdps_par_eur_00/skewt/skewt_Zagreb_0%hour%.png",
+        "min": 0,
+        "max": 72,
+        "indexes": [12],
+        "increments": 12,
+    },
     "skewt-zg": {
         "name": "Skewt Zagreb",
         "url": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/output/45.9-15.8-%hour%.png",
         "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=45.9&lon=15.8&hh=%hour%",
         "min": 0,
         "max": 72,
-        "indexes": [0],
+        "indexes": [12],
         "increments": 12,
     },
     "skewt-jap": {
@@ -113,7 +129,7 @@ const sites = {
         "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=45.7&lon=15.7&hh=%hour%",
         "min": 0,
         "max": 72,
-        "indexes": [0],
+        "indexes": [12],
         "increments": 12,
     },
     "skewt-tribalj": {
@@ -122,7 +138,7 @@ const sites = {
         "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=45.2&lon=14.7&hh=%hour%",
         "min": 0,
         "max": 72,
-        "indexes": [0],
+        "indexes": [12],
         "increments": 12,
     },
     "skewt-ivanec": {
@@ -131,7 +147,7 @@ const sites = {
         "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=46.2&lon=16.1&hh=%hour%",
         "min": 0,
         "max": 72,
-        "indexes": [0],
+        "indexes": [12],
         "increments": 12,
     },
     "skewt-buzet": {
@@ -140,7 +156,7 @@ const sites = {
         "url_prep": "https://gamma.meteoadriatic.net/meteoadriatic/ma2024/skewts/return.php?lat=46.4&lon=14.0&hh=%hour%",
         "min": 0,
         "max": 72,
-        "indexes": [0],
+        "indexes": [12],
         "increments": 12,
     },
     "radar-kompozit": {
@@ -191,6 +207,11 @@ function loadImages(site) {
     if (indexes === 'current-time-utc') {
         const hour = new Date().getUTCHours();
         indexes = [hour];
+    } else if (indexes === 'current-date-time-utc') {
+        let hour = getCurrentDateTimeUTC();
+        hour = Math.floor(hour / site.increments) * site.increments;
+        hour = adjustTime(hour, -15);
+        indexes = [hour];
     } else if (indexes === 'current-time-hr') {
         const hour = new Date().getHours();
         indexes = [hour];
@@ -224,47 +245,50 @@ function loadSites(site_names) {
 }
 
 function prepImage(urlPrep, hour, done) {
-    const imgPrep = new Image();
-    imgPrep.src = getImageUrl(urlPrep, hour);
-    imgPrep.onload = () => {
-        done();
-    };
+    fetch("https://hpgf.org/prep.php?url=" + encodeURIComponent(urlPrep.replace("%hour%", hour)))
+        .then(() => {
+            done();
+        })
 }
 
-let timeout = null;
 function loadImage(img, site, hour) {
-    log(site.name, hour);
-    if (site.url_prep) {
-        prepImage(site.url_prep, hour, () => {
-            if (timeout) {
-                clearTimeout(timeout);
-                timeout = null;
-                img.style.display = "block";
-                img.src = getImageUrl(site.url, hour);
-            }
-        })
-        timeout = setTimeout((img) => {
-            const parent = img.parentNode;
-            const newImg = document.createElement("img");
-            newImg.src = img.src; // Keep the same source
-            newImg.setAttribute("site", site.name);
-            newImg.setAttribute("hour", hour);
-            newImg.addEventListener("click", handleImageClick);
-            parent.replaceChild(newImg, img);
-        }, 3000, img);
-    }
+    console.log(site.name, hour);
+    if (window.location.hostname !== "127.0.0.1")
+        log(site.name, hour);
     img.setAttribute("hour", hour);
     img.title = `${site.name} - ${hour}`;
-    img.onload = () => {
-        if (timeout) {
-            clearTimeout(timeout);
-            timeout = null;
-        }
-    };
-    img.onerror = () => {
-        img.style.display = "none";
+    if (site.url_prep) {
+        prepImage(site.url_prep, hour, () => {
+            setTimeout((img) => {
+                showLoading(img);
+                img.src = getImageUrl(site.url, hour);
+                img.onload = imgOnLoad;
+            }, 1000, img);
+        })
+        return;
     }
     img.src = getImageUrl(site.url, hour);
+
+    if (img.complete) {
+        console.log("Complete", img.src);
+        imgOnLoad(img)
+        img.onload = null;
+    } else {
+        showLoading(img);
+        img.onload = imgOnLoad;
+    }
+}
+
+function imgOnLoad(event) {
+    let img = event.target || event;
+    if (img.loadingBox) {
+        document.body.removeChild(img.loadingBox);
+        img.loadingBox = null;
+    }
+
+    if (animation && !img.src.includes('placeholder.jpg')) {
+        setTimeout(nextPrevImage, 500, img)
+    }
 }
 
 function getImageUrl(url, hour) {
@@ -275,58 +299,137 @@ function getImageUrl(url, hour) {
 }
 
 let clickTimer;
-let clickInterval;
+let animation;
 function handleImageClick(event) {
     if (event.target.tagName !== "IMG") {
         return;
     }
+    const img = event.target;
     const dir = event.clientX < window.innerWidth / 2 ? -1 : 1;
+    if (currentSite.site_names) { // next/prev for grouped sites
+        event.target.parentNode.querySelectorAll("img").forEach((img) => {
+            img.direction = dir;
+            nextPrevImage(img);
+        })
+        return;
+    }
+
+    if (animation) {
+        animation = false;
+        document.querySelectorAll('.loading').forEach(div => {
+            div.remove();
+        })
+        return;
+    }
+    img.direction = dir;
+    const site = siteByName(img.getAttribute("site"));
+    if (site.url_prep) {
+        nextPrevImage(img);
+        return;
+    }
+
+    // doubleclick handling
     if (clickTimer) {
         clearTimeout(clickTimer);
         clickTimer = null;
-        if (clickInterval) {
-            clearInterval(clickInterval);
-            clickInterval = null;
-            return;
-        }
-        const img = event.target;
-        const site = siteByName(img.getAttribute("site"));
-        if (site.url_prep || currentSite.site_names) // no animation for prep images or grouped sites
-            return;
-        clickInterval = setInterval((img, dir) => {
-            nextPrevImage(img, dir);
-        }, 600, img, dir);
+        animation = true;
+        nextPrevImage(img);
     } else {
-        if (currentSite.site_names) { // next/prev for grouped sites
-            event.target.parentNode.querySelectorAll("img").forEach((img) => {
-                nextPrevImage(img, dir);
-            })
-            return;
-        }
-        const img = event.target;
         clickTimer = setTimeout((img) => {
             clickTimer = null;
-            nextPrevImage(img, dir);
+            nextPrevImage(img);
         }, 300, img);
     }
 }
 
-function nextPrevImage(img, dir) {
+function nextPrevImage(img) {
+    const dir = img.direction;
     const site = siteByName(img.getAttribute("site"));
     const hour = parseInt(img.getAttribute("hour"));
-    const newHour = hour + dir * site.increments;
+    let newHour;
+    if (site.indexes === 'current-date-time-utc')
+        newHour = adjustTime(hour, dir * site.increments);
+    else
+        newHour = hour + dir * site.increments;
     if (newHour < site.min || newHour > site.max) {
-        if (clickInterval) {
-            clearInterval(clickInterval);
-            clickInterval = null;
+        if (animation) {
+            animation = false;
+            document.querySelectorAll('.loading').forEach(div => {
+                div.remove();
+            })
         }
         return;
     }
+    img.setAttribute("hour", newHour);
     loadImage(img, site, newHour);
 }
 
 function siteByName(name) {
     return Object.values(sites).find(site => site.name === name);
+}
+
+function showLoading(img) {
+    if (!img || !img.getBoundingClientRect) return;
+
+    const rect = img.getBoundingClientRect();
+    const loadingBox = document.createElement("div");
+    loadingBox.innerHTML = '<div class="spinner-border text-primary" role="status"></div>';
+    loadingBox.classList.add("loading"); // Apply CSS class
+    loadingBox.style.top = `${rect.top + window.scrollY + rect.height / 2}px`;
+    loadingBox.style.left = `${rect.left + window.scrollX + rect.width / 2}px`;
+    document.body.appendChild(loadingBox);
+    img.loadingBox = loadingBox;
+    img.onerror = () => {
+        if (animation) {
+            animation = false;
+            img.loadingBox = null;
+            document.querySelectorAll('.loading').forEach(div => {
+                div.remove();
+            })
+        }
+        img.src = "placeholder.jpg";
+        if (img.loadingBox) {
+            document.body.removeChild(img.loadingBox);
+            img.loadingBox = null;
+        }
+    }
+}
+
+function adjustTime(timestamp, increment) {
+    // Parse components from yyyymmddHHMM format
+    const year = Math.floor(timestamp / 100000000);
+    const month = Math.floor((timestamp % 100000000) / 1000000) - 1; // Months are zero-based in JS
+    const day = Math.floor((timestamp % 1000000) / 10000);
+    const hours = Math.floor((timestamp % 10000) / 100);
+    const minutes = timestamp % 100;
+
+    // Create a Date object
+    let date = new Date(year, month, day, hours, minutes);
+
+    // Adjust minutes by 5
+    date.setMinutes(date.getMinutes() + increment);
+
+    // Extract updated components
+    const newYear = date.getFullYear();
+    const newMonth = String(date.getMonth() + 1).padStart(2, "0"); // Convert back to 1-based
+    const newDay = String(date.getDate()).padStart(2, "0");
+    const newHours = String(date.getHours()).padStart(2, "0");
+    const newMinutes = String(date.getMinutes()).padStart(2, "0");
+
+    // Return new yyyymmddHHMM format
+    return `${newYear}${newMonth}${newDay}${newHours}${newMinutes}`;
+}
+
+function getCurrentDateTimeUTC() {
+    const now = new Date();
+
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0'); // Months are 0-based
+    const day = String(now.getUTCDate()).padStart(2, '0');
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+
+    return Number(`${year}${month}${day}${hours}${minutes}`);
 }
 
 function setCookie(cname, cvalue, exdays = 670) {
@@ -347,3 +450,4 @@ function log(siteName, hour) {
     const i = new Image();
     i.src = "https://hpgf.org/pgv/log.php?i=" + encodeURIComponent(siteName + ' ' + hour);
 }
+
